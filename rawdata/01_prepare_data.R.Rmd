@@ -1,0 +1,211 @@
+---
+title: "教育代际传递"
+author: "王小二"
+date: "`r Sys.Date()`"
+---
+
+
+本文系重复南京大学的《教育人力资本的代际传递研究》数据获取
+
+
+```{r message = FALSE, warning = FALSE}
+library(dplyr)
+library(tidyr)
+library(here)
+library(fs)
+library(purrr)
+library(haven)
+library(broom)
+```
+
+
+# 思路
+
+- 成人表，限定：出生日期在1970年到1989年这段时间的被调查者
+- 家庭关系表，找到父母的教育情况
+- 形成数据框 pid, edu, mother_edu, father_edu
+
+
+中国34个省级行政区：
+
+- 中部地区，包括湖北42、湖南43、河南41、安徽34、江西36、山西14六个相邻省份
+- 西部地区，包括西藏54、新疆65、青海63、甘肃62、宁夏64、云南53、贵州52、四川51、陕西61、重庆50、广西45、内蒙古15
+- 东部地区，包括广东44、福建35、浙江33、江苏32、山东37、上海31、北京11、天津12、河北13
+- 其他地区，辽宁省21、吉林省22、黑龙江省23、海南省46
+
+
+
+# 数据
+
+## 成人表
+```{r}
+cfps2016adult <- read_dta("./data/2016AllData/cfps2016adult_201906.dta")
+```
+
+
+```{r eval=FALSE, include=FALSE}
+cfps2016adult %>% sjPlot::view_df()
+```
+
+
+
+
+筛选**成人表**中相关的变量
+
+```{r}
+pre_adult <- cfps2016adult %>%
+  dplyr::select(
+    pid,                           # 个人ID
+    # fid16,                       # 2016年家庭样本编码
+    provcd16,                      # 2016年省国标码
+    # countyid16,                  # 2016年区县顺序码
+    urban = urban16,               # 基于国家统计局资料的城乡分类
+    year = cfps_birthy,            # 出生年份
+    gender = cfps_gender,          # 性别
+    healthy = qp201,               # 健康状况
+    married = qea0,                # 当前婚姻状态
+    party = qn4001,                # 是否是党员
+    hukou = pa301	                 # 现在的户口状况
+  )  %>% 
+  
+  # 个人id
+  filter(!pid %in% c(-10, -9, -8, -2, -1, 77, 78, 79)) %>% 
+  
+  # 年代
+  filter(between(year, 1970, 1989)) %>% 
+  # mutate(generation = case_when(
+  #   between(year, 1970, 1979) ~ "70s",
+  #   between(year, 1980, 1989) ~ "80s",
+  #   TRUE ~ "other"
+  # )) %>%
+
+  # 区域： 西部地区 = 1,   中部地区 = 2,  东部地区 = 3, (21, 22, 23,归为西部 46归为中部)
+  mutate(region = case_when(
+    provcd16 %in% c(44, 35, 33, 32, 37, 31, 11, 12, 13)                         ~ 3,
+    provcd16 %in% c(42, 43, 41, 34, 36, 14, 46)                                 ~ 2,
+    provcd16 %in% c(54, 65, 63, 62, 64, 53, 52, 51, 61, 50, 45, 15, 21, 22, 23) ~ 1,
+    TRUE ~ NA_real_
+  )) %>%
+  filter(!is.na(region)) %>%
+
+  # 性别
+  filter(gender %in% c(0, 1)) %>% # 男 = 1, 女 = 0
+  
+  # 城乡分类
+  filter(urban %in% c(0, 1)) %>%  # 乡村 = 0, 城镇 = 1
+  
+  # 现在的户口状况 
+  filter(hukou %in% c(1, 3)) %>%                # 农业户口 =1, 非农业户口 =3
+  mutate(hukou = if_else(hukou == 1, 0, 1)) %>% # 农业户口 =0, 非农业户口 =1
+  
+  # 健康状态
+  filter(healthy %in% c(1, 2, 3, 4, 5)) %>%     # 不健康=5,...非常健康 = 1
+  mutate(healthy = 6 - healthy) %>%             # 不健康=1,...非常健康 = 5
+  
+  # 当前婚姻状态
+  filter(married %in% c(1, 2)) %>%              #  未婚 =1; 在婚 =2
+  mutate(married = married - 1) %>%             #  未婚= 0; 已婚 =1
+  
+  # 是否是党员
+  filter(party %in% c(0, 1))                    # 是= 1, 否 =0
+
+
+pre_adult
+```
+
+
+```{r eval=FALSE, include=FALSE}
+pre_adult %>% sjPlot::view_df()
+```
+
+
+
+
+## 家庭关系表
+
+```{r}
+cfps2016famconf <- read_dta("./data/2016AllData/cfps2016famconf_201804.dta")
+```
+
+
+
+```{r eval=FALSE, include=FALSE}
+cfps2016famconf %>% sjPlot::view_df()
+```
+
+```{r}
+pre_family <- cfps2016famconf %>%
+  dplyr::select(
+    pid,                 # 个人样本编码
+    Ed   = tb4_a16_p,    # 个人最高学历
+    F_ed = tb4_a16_f,    # 父亲最高学历
+    M_ed = tb4_a16_m,    # 母亲最高学历
+    alive_a16_p          # 个人是否健在
+  ) %>% 
+  
+  # 健在
+  filter(alive_a16_p == 1) %>%  
+  
+  # 学历
+  filter(
+    if_all(c(Ed, F_ed, M_ed), ~ .x %in% c(1, 2, 3, 4, 5, 6, 7, 8)) 
+  ) %>%
+  mutate(
+    across(c(Ed, F_ed, M_ed), ~ case_when(
+      .x == 1 ~ 1,     # 文盲/半文盲=1，
+      .x == 2 ~ 6,     # 小学=6， 
+      .x == 3 ~ 9,     # 初中=9，
+      .x == 4 ~ 12,    # 高中(中专/技校/职高)=12，
+      .x == 5 ~ 15,    # 大专=15，
+      .x == 6 ~ 16,    # 大学本科=16，
+      .x == 7 ~ 19,    # 硕士=19，
+      .x == 8 ~ 22,    # 博士=22 
+      TRUE ~ NA_real_
+    ))
+  ) %>%
+  drop_na()
+  
+
+pre_family
+```
+
+
+
+```{r}
+pre_family %>% sjPlot::view_df()
+```
+
+
+
+```{r}
+df <- pre_adult %>%
+  left_join(pre_family, by = "pid") %>%
+  select(-provcd16, -alive_a16_p) %>% 
+  drop_na() %>% 
+  select(pid, Ed, F_ed, M_ed, hukou, year, urban, gender, region, healthy, married, party)
+
+df
+```
+
+
+```{r}
+df %>% janitor::get_dupes(pid)
+```
+
+
+```{r}
+df %>% glimpse()
+```
+
+
+
+```{r}
+df %>% 
+  select(-pid, -F_ed, -M_ed) %>% 
+  psych::describe()
+```
+
+
+```{r}
+df %>% readr::write_rds("trans_cfps.rds")
+```

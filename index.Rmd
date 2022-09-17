@@ -1,0 +1,63 @@
+--- 
+title: "教育人力资本的代际传递研究"
+author: "池彪"
+date: "`r Sys.Date()`"
+subtitle: 'Research on Intergenerational Transmission of Educational Human Capital --- An empirical analysis based on CFPS'
+site: bookdown::bookdown_site
+documentclass: book
+bibliography: book.bib
+#cover-image: images/cover.png
+description: |
+  This is a minimal example of using the bookdown package to write a book.
+  set in the _output.yml file.
+  The HTML output format for this example is bookdown::bs4_book,
+biblio-style: apalike
+csl: chicago-fullnote-bibliography.csl
+---
+
+```{r setup, include=FALSE}
+options(digits = 3, 
+        dplyr.print_min = 6, 
+        dplyr.print_max = 6,
+        htmltools.dir.version = FALSE, 
+        formatR.indent = 2, 
+        width = 90
+        )
+
+knitr::opts_chunk$set(
+        warning = FALSE, 
+        message = FALSE,
+        fig.align = "center", 
+        out.width = "100%",
+        fig.width = 6, 
+        fig.asp = 0.618,
+        dpi = 300, 
+        fig.showtext = TRUE
+    )
+```
+
+
+
+# 摘要 {.unnumbered}
+
+## 中文摘要 {-}
+
+改革开放以来, 我国经济社会得到飞速发展, 但是也存在着贫富差距加大和社会阶层固化等问题。代际传递是影响社会流动的一个重要方面。教育代际传递性越强说明教育代际流动性越差，社会阶层固化现象越严重。教育人力资本作为人力资本的重要部分，受教育水平的高低往往代表一个人的人力资本存量水平。
+
+本文采用 2016 年的中国家庭追踪调查数据(CFPS), 来对教育人力资本的代际传递问题进行研究，在相关理论基础上，主要运用描述性统计、教育代际转换矩阵和有序 logit 回归进行实证分析。本文不仅对整体样本进行回归分析,还对样本进行分类分析,研究结果表明，父母的受教育程度对子女的受教育水平有显著的正向影响,母亲相对父亲影响作用更大，母亲的受教育水平提高时, 子女处于低水平学历的概率减少的更多，处于高水平的学历的概率增加的更大。对家庭内部而言，当父母的受教育水平相匹配时，更有利于子女的受教育水平的提高。从子女的性别差异来看，当父母的整体受教育程度提高时，女性的受教育水平向上提高一个级别的概率更大, 而且女性接受高等教育的可能性也更大.从教育代际流动性来看农村的教育代际流动性低于城市，西部地区的教育代际流动性低于中部和东部地区，70 后群体的教育代际流动性低于 80后群体。总体来说，我国教育代际流动性增强，教育不公平人性降低，但是我国教育在城乡和区域之间还存在较大差异。
+
+
+关键词: 教育人力资本，代际传递，代际流动
+
+
+
+## ABSTRACT {-}
+
+Since the reform and opening up, China's economy and society have developed rapidly but there are also problems such as the widening gap between the rich and the poor and the solidification of the social class，Jntergenerational transmission is an important aspect that affects social mobility，The stronger intergenerational transmission of education indicates that the worse the intergenerational mobility of education，the more serious the social class is solidified. As an important part of human capital， education human capital often represents the level of human capital stock of a person.
+
+This paper uses the 2016 China Family Panel Studies (CFPS) to study the intergenerational transformation of educational human capital，Based on relevant theories， it mainly uses descriptive statistics， educational intergenerational transformation matrix and ordered logit regression to doing empirical analysis. This Paper not only performs regression analysis on the whole Sample, but also classifies the Sample, The results of the study show that the educational level of parents has a Significant positive impact on the educational level of their children. The mother has a greater influence on the father When the mothers education level is improved, the probability of the child's low level of education is reduced. The probability of being at a high level of education increases even Imore. For the family，when the level of education of the parents is matched, it is more conducive to the improvement of the education level of the children. Judging fom the gender differences of children, when the overall education level of parents is improved，women's education level is more likely to increase one level, and women are more likely to receive higher education.
+
+From the perspecftive of intergenerational mobility of education, the intergenerational mobility of education in miral areas is lower than that of urban areas，The intergenerational mobility ofeducation in the westerm regions is lower than that in the central and easterm regions. The intergenerational mobility of the post-70s is lower than that of the post-80s，Gienerally speaking，the intergenerational mobility of education ip China has increased and the unfairness of education has decreased. However there are still large differences in education between urban and rural areas and regions.
+
+keywords: education human capital, intergenerational transmission, intergenerational mobility
+

@@ -1,0 +1,780 @@
+# 实证分析
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(gt)
+
+raw <- read_rds(here::here("rawdata", "trans_cfps.rds"))
+```
+
+
+## 教育代际转换矩阵分析
+
+为了研究教育人力资本的代际传递情况，一般会分析教育人力资本的代际流动性。在研
+究教育的代际流动性的强弱时，一般会使用教育代际转换矩阵来进行动态分析。从教育代际
+转换矩阵可以看出，当父母的受教育水平处于某个状况时,子女的受教育水平在各个状况的
+比例分布，也就是概率分布统计。从教育代际转换矩阵中，我们可以更加直观的分析,子女
+的受教育水平如何受到父母的受教育水平的影响，以及在各个区间的概率。
+
+为了研究方便, 以下用 1, 2, 3, 4, 5 分别表示受教育水平“1"表示“文盲/半文盲”； “2”
+表示“小学学历”； “3”表示“初中学历”； “4”表示“高中学历”；“5”表示“大专及以上学历”。
+
+```{r}
+df <- raw %>%
+  mutate(across(c(Ed, F_ed, M_ed), ~ case_when(
+      .x == 1  ~ 1,
+      .x == 6  ~ 2,
+      .x == 9  ~ 3,
+      .x == 12 ~ 4,
+      .x >= 15 ~ 5,
+      TRUE ~ NA_real_
+    ))
+  ) 
+
+df
+```
+
+
+### 父母受教育水平的匹配情况分析
+
+```{r tab-parents-match}
+df %>% 
+  count(F_ed, M_ed) %>% 
+  mutate(percent = n / sum(n)) %>% 
+  select(-n) %>% 
+  pivot_wider(
+    names_from = F_ed,
+    values_from = percent,
+    values_fill = "0.00%",
+    values_fn = ~scales::percent(.x, accuracy = 0.01)
+  ) %>% 
+  gt(caption = "父母受教育程度的匹配情况")
+```
+
+
+从表 \@ref(tab:tab-parents-match)中可以看出，在文盲/半文盲的分布中，母亲所占比重高达 54.39%，远高于父亲的 30.18%。在小学学历的分布中，母亲占比为 24.36%，低于父亲的 30.52%。在初中学历的分布中, 母亲占比为 14.50%,低于父亲的24.49%。在高中学历的分布中, 母亲占比为 5.99%，低于父亲的12.59%。在大专及以上学历的分布中，母亲占比为0.75%，低于父亲的 2.23%。可以看出父亲的总体学历水平高于母亲,这表明中国婚姻中，男性的学历一般高于女性的学历，这也符合我们的常识。在婚姻市场上，一般男性的学历要高于或等于女性的学历，可能与中国传统文化中的“大男子主义”有关，男性都希望在结婚之后，自己在家庭地位中占据主导地位。上表还可以通过对角线的相加得到父母亲教育学历一样的分布比例, 达到 46. 43%，接近一半人的父母亲学历是一样的。婚姻中一半会追求家庭背景的“门当户对”，同样的在教育经历方面也会追求“门当户对”的现象。相关的研究表明，父母教育经历相同更利于对孩子的教育，主要因为双方的教育观念差距较小，能够提高对子女的教育效率。
+
+
+
+
+### 父母与子女的教育代际转换矩阵
+
+```{r tab-father-vs-child}
+df %>% 
+  count(F_ed, Ed) %>% 
+  mutate(percent = n / sum(n)) %>% 
+  select(-n) %>% 
+  pivot_wider(
+    names_from = Ed,
+    values_from = percent,
+    values_fill = "0.00%",
+    values_fn = ~scales::percent(.x, accuracy = 0.01)
+  ) %>% 
+  gt(caption = "父亲与子女的教育代际转换矩阵")
+```
+
+
+从表 \@ref(tab:tab-father-vs-child) 中可以看出，当父亲的受教育水平为“文盲/半文盲” 时，其子女的受教育水平为“小学及以下”的概率为56.78%，接受“大专及以上”的高等教育的概率仅为 6.22%。但是当父亲的受教育水平为“大专及以上”时，也就是说父亲本身接受过高等教育，那么其子女的受教育水平为“小学及以下”的概率仅为4.74%，接受“大专及以上”的高等教育的概率为 65.26%。随者父亲的受教育水平的提高，子女的受教育水平显现向着高学历流动的趋势, 可见父亲的受教育水平对子女的受教育水平起到特别重要的正向影响。也反映出教育人力资本存在着代际传递的现象。
+
+
+
+```{r tab-mother-vs-child}
+df %>% 
+  count(M_ed, Ed) %>% 
+  mutate(percent = n / sum(n)) %>% 
+  select(-n) %>% 
+  pivot_wider(
+    names_from = Ed,
+    values_from = percent,
+    values_fill = "0.00%",
+    values_fn = ~scales::percent(.x, accuracy = 0.01)
+  ) %>% 
+  gt(caption = "母亲与子女的教育代际转换矩阵")
+```
+
+
+从表 \@ref(tab:tab-mother-vs-child)  中可以看出，当母亲的受教育水平为“文盲/半文盲”时，其子女的受教育水
+平为“小学及以下”的概率为 49.06%，接受“大专及以上”的高等教育的概率仅为 8.12%。
+但是当母亲的受教育水平为“大专及以上”时，也就是说母亲本身接受过高等教育，那么其
+子女的受教育水平为“小学及以下”的概率为0，接受“大专及以上”的高等教育的概率高
+达 84.38%。随着母亲的受教育水平的提高，子女的受教育水平也呈现向着高学历流动的趋
+势，可见母亲的受教育水平对子女的受教育水平起到特别重要的正向影响。
+
+
+通过父亲与子女受教育水平的概率分布和母亲与子女受教育水乎的概率分布对比可以
+看出, 母亲的受教育水平对子女的受教育水平的代际传递正向性更大。从两张表中可以看出，
+当父母处于同样的受教育水平，母亲对子女的受教育水平的正向促进作用更加显著。 主要原
+因可能是在中国传统文化的影响下，家庭内部，父亲更多的主外，母亲更多的主内。在一般
+的家庭中，母亲相对承担更多的教育子女以及家庭事务，子女一般和母亲的相处时间更长，
+受母亲的教育影响更大。
+
+
+
+### 父母与子女的教育代际转换矩阵城乡户籍差异
+
+```{r tab-father-vs-child-hukou-1}
+df %>% 
+  filter(hukou == 1) %>% 
+  count(F_ed, Ed) %>% 
+  mutate(percent = n / sum(n)) %>% 
+  select(-n) %>% 
+  pivot_wider(
+    names_from = Ed,
+    values_from = percent,
+    values_fill = "0.00%",
+    values_fn = ~scales::percent(.x, accuracy = 0.01)
+  ) %>% 
+  gt(caption = "父亲与子女的教育代际转换矩阵（非农业户籍）")
+```
+
+```{r tab-father-vs-child-hukou-0}
+df %>% 
+  filter(hukou == 0) %>% 
+  count(F_ed, Ed) %>% 
+  mutate(percent = n / sum(n)) %>% 
+  select(-n) %>% 
+  pivot_wider(
+    names_from = Ed,
+    values_from = percent,
+    values_fill = "0.00%",
+    values_fn = ~scales::percent(.x, accuracy = 0.01)
+  ) %>% 
+  gt(caption = "父亲与子女的教育代际转换矩阵（农业户籍）")
+```
+
+
+
+农业户籍可以看作农村户籍，非农业户籍可以看作城市户籍。基于次，可以分析城市户
+籍和农村户籍的教育代际流动性的差异。表 \@ref(tab:tab-father-vs-child-hukou-1) 和表 \@ref(tab:tab-father-vs-child-hukou-0) 可以看出, 父亲的受教育水平对子女的受
+教育水平的影响存在着,城乡户籍差异。相比而言，城市户籍的教育代际流动性比较强，而
+农村户籍的教育代际流动性比较差。具体来看，对于城市户籍来说，当父亲的受教育水平为
+文盲/半文盲时，其子女的受教育水平也为文言/半文言的概率为仅为 7.18%，为小学水平的
+概率为 17.53%，为初中水平的概率为 30.75%，为高中水平的概率为 19.25%，为大专及以上
+的概率达到 25.29%。可以看由，即使城市户籍子女的父亲的受教育水平为文盲/半文盲，但
+是他们只有 7.18%的可能维持父亲的受教育水平, 仍然有高达 25.29 的概率接受到高等教育。
+当城市户籍子女的父亲受教育水平达到大专及以上水平时，其子女的受教育水平为文盲/半
+文盲的概率为仅为 1.36%，为小学水平的概率为 0.68%，为初中水平的概率为 6.125%，为高
+中水平的概率为 15.65%，为大专及以上的概率高达 76.19%。可以看出，当城市户籍子女的
+父亲的受教育水平达到高等教育水平时, 他们接受高等教育的可能性也非常高。对于农村户
+籍来说，当父亲的受教育水平为文言/半文言时,其子女的受教育水平也为文言/半文盲的概
+率为高达 31.62%，为小学水平的概率为 30.18%，为初中水平的概率为 29.41%，为高中水平
+的概率为 5.54%，为大专及以上的概率仅有 3.24%。可以看出，当农村户籍子女的父亲的受
+教育水平为文盲/半文盲时，他们有 31. 62%的可能维持父亲的受教育水平，接受高等教育的
+可能性仅有 3. 248。当农村户籍子女的父亲受教育水平达到大专及以上水平时，其子女的受
+教育水平为文盲/半文盲的概率为 6.98%，为小学水平的概率为 6.98%，为初中水平的概率为
+37. 21%，为高中水平的概率为 20.93%，为大专及以上的概率仅有 27.91%。可以看出，当农
+村户籍子女的父亲的受教育水平达到高等教育水平时, 他们接受高等教育的可能性也不是很
+高, 仅有 27.91 的水平维持父亲的受教育水平，和城市户籍的 76.19%相比, 差距较为明显。
+
+
+
+
+
+```{r tab-mother-vs-child-hukou-1}
+df %>% 
+  filter(hukou == 1) %>% 
+  count(M_ed, Ed) %>% 
+  mutate(percent = n / sum(n)) %>% 
+  select(-n) %>% 
+  pivot_wider(
+    names_from = Ed,
+    values_from = percent,
+    values_fill = "0.00%",
+    values_fn = ~scales::percent(.x, accuracy = 0.01)
+  ) %>% 
+  gt(caption = "母亲与子女的教育代际转换矩阵（非农业户籍）")
+```
+
+```{r tab-mother-vs-child-hukou-0}
+df %>% 
+  filter(hukou == 0) %>% 
+  count(M_ed, Ed) %>% 
+  mutate(percent = n / sum(n)) %>% 
+  select(-n) %>% 
+  pivot_wider(
+    names_from = Ed,
+    values_from = percent,
+    values_fill = "0.00%",
+    values_fn = ~scales::percent(.x, accuracy = 0.01)
+  ) %>% 
+  gt(caption = "母亲与子女的教育代际转换矩阵（农业户籍）")
+```
+
+
+
+以上\@ref(tab:tab-mother-vs-child-hukou-1) 和表 \@ref(tab:tab-mother-vs-child-hukou-0)可以看出，大体结果和父亲的一样，母亲的受教育水平对子女的受教育水平的影响存在着城乡户籍差异。城市户籍的教育代际流动性比较强， 而农村户籍的教育代际流动性比较差。无论是城市户籍还是农村户籍，母亲的受教育水平对子女的受教育水平的代际传递正向性更大,当父母处于同样的受教育水平，母亲对子女的受教育水平的正向促进作用更加显著。
+
+总体来说, 城乡户籍差异对子女的受教育水平也会产生较大的差异, 城市户籍的教育代
+际向上流动性更强，其子女接受较高水平的教育概率更大。
+
+
+
+
+## 有序logistic回归
+
+
+有序 logit 同归模型基本形式如下:
+$$
+\begin{align*}
+\text{Ed}_i = f( & \text{Fmed}_i, \text{Fed}_i, \text{M_ed}_i, \text{gender}_i, \text{urban}_i, \text{hukou}_i, \\
+&\text{region}_i, \text{healthy}_i, \text{married}_i, \text{party}_i), \quad i = 1,2,3...n
+\end{align*}
+$$
+
+
+
+其中，被解释变量为 Ed，表示子女的受教育水平; 解释变量为 F_ed 和 M_ed,分别表示
+父亲的受教育水平和母亲的受教育水平，Fmed 表示fed 和 m_ed 之和，表示父母的整体受
+教育水平之和。Z 表示控制变量，包括子女的性别(gender)、子女的户籍状况(hukou)、子女
+的出生年份(year)、所在地区(region)、城乡状况(urban)、党员状况(party)、健康状况(healthy)和婚姻状况(married)。
+
+为了更好地对样本进行有序分析，本部分把受教育水平进行调整。受教育水平， “1”
+表示“文盲/半文盲”; “2”表示“小学学历”; “3”表示“初中学历”; “4”表示“高
+中学历”; “5”表示“大专及以上学历”。
+
+
+### 整体样本回归
+
+```{r, message=FALSE, warning=FALSE}
+library(MASS)
+
+df1 <- df %>%
+  mutate(
+    across(Ed, as.factor),
+    across(Ed, ~fct_inseq(.x, ordered = TRUE))
+  )
+
+mod1 <- polr(
+  Ed ~ F_ed + M_ed + gender + urban + hukou + region + healthy + married + party,
+  data = df1,
+  method = c("logistic")
+)
+
+```
+
+
+```{r tab-ordered-logit-total-sample}
+tb_odds_ratio <- 
+  broom::tidy(mod1, exponentiate = TRUE) %>% 
+  dplyr::filter(!str_detect(term, "\\d")) %>% 
+  dplyr::select(term, Odds_Ratio = estimate)
+
+
+tb_margin_effect <- erer::ocME(mod1) %>% 
+  purrr::pluck("out") %>% 
+  purrr::pluck("ME.all") %>% 
+  as.data.frame() %>% 
+  rownames_to_column("term")
+
+
+tb_odds_ratio %>% 
+  left_join(tb_margin_effect, by = "term") %>% 
+  gt(caption = "整体样本的有序logit回归结果")
+```
+
+
+
+从表 \@ref(tab:tab-ordered-logit-total-sample) 回归结果可以看出，当父亲的受教育程度提高一个级别时，其子女的受教育水平向
+上提高一个级别的概率会增加 53.24%，子女的受教育水平为“文盲/半文盲”的概率会减少
+4.35%，为“小学”的概率会减少 2.93%，为“初中”的概率会增加 1.34%，为“高中”的概
+率会增加 1.99%，为“大专及以上”的概率会增加 3. 95%。当母亲的受教育程度提高一个级
+别时，其子女的受教育水平向上提高一个级别的概率会增加 55.95%，子女的受教育水平为
+“文盲/半文盲”的概率会减少 4.53%，为“小学”的概率会减少 3.05%，为“初中”的概率
+会增加 1.39%%，为“高中”的概率会增加 2.08%，为“大专及以上”的概率会增加 4.11%。
+可以看出父母的受教育水平对子女的受教育水平有着显著的正向影响, 母亲相对父亲影响作
+用更大。当母亲的受教育水平提高时，子女处于低水平学历的概率减少的更多，处于高水平
+的学历的概率增加的更大。主要原因可能是在中国传统文化的影响下，家庭内部，父亲更多
+的主外，母亲更多的主内。在一般的家庭中，母亲相对承担更多的教育子女以及家庭事务，
+子女一般和母亲的相处时间更长，受母亲的教育影响更大。         
+
+
+男性的受教育水平与女性的受教育水平相比，男性的受教育程度提高一个级别的可能
+性比女性要高出 4.51%，男性的受教育水平为“文盲/半文盲”的概率会减少 3.68%，为“小
+学”的概率会减少 2.48%，为“初中”的概率会增加 1.13%，为“高中”的概率会增加 1.69%，
+为“大专及以上”的概率会增加 3.34%。说明子女受教育水平在性别方面存在差异，男性的
+受教育水平提升一个级别的概率高于女性,而且处于低级教育水平概率较小,处在高等教育
+的可能性较大。 可能是由于我国重男轻女思想的影响, 尤其是在农村地区这种思想更为严重，
+导致的性别差异。
+
+
+从城乡位置方面来看,居住在城市的子女与居住在农村的子女的平均受教育水平相比，
+居住在城市的子女受教育程度提高一个级别的可能性比居住在农村的子女要高出 87.31%，
+居住在城市子女的受教育水平为“文盲/半文盲”的概率会减少 6.4%, 为“小学”的概率会
+减少 4.3%，为“初中”的概率会增加 1.96%，为“高中”的概率会增加 2.93%，为“大专及
+以上”的概率会增加 5.81%。居住在城市的子女处于低级教育水平概率较小，处在高等教育
+的可能性较大。因为城市的教育无论是在数量还是质量方面都比乡村要好很多, 城市的教育
+环境更利于孩子的受教育水平的提高。
+
+
+从在城乡户籍方面来看，城市户籍子女的平均受教育水平提高一个级别的可能性比农
+村户籍子女高出 3.22 倍，城市户籍子女的受教育水平为“文盲/半文盲”的概率会减少
+14.68%，为“小学”的概率会减少 9.88%，为“初中”的概率会增加 4.51%，为“高中”的
+概率会增加 6.73%，为“大专及以上”的概率会增加 13.33%。 可以看出户籍在子女的受教育
+水平方面影响很大, 目前的地方教育受户籍影响较大.因为居住在城市但是户籍不是城市时，
+不一定能享受到城市的教育,尤其对于一些农民工子弟而言。由于户籍等因素的影响，他们
+的子女很难到教育质量较好的学校上学。
+
+
+从所在地区方面来看，东部地区子女的平均受教育水平提高一个级别的可能性比中部
+地区子女(或者中部地区比西部地区) 高出 44.09%，东部 (或者中部) 地区子女的受教育
+水平为“文盲/半文盲”的概率会减少 3.72%，为“小学”的概率会减少 2.51%， 为“初中”
+的概率会增加 1.14%，为“高中”的概率会增加 1.71%，为“大专及以上”的概率会增加
+3.38%。主要是经济发达的地区，教育水平也比较高。一个地区的经济水平和教育水平是相
+互促进的, 经莘发达的地区会增加对教育经费的投入,而教育投入增多又会提高地区的人力
+资本水平，反过来促进经济的增长，产生一种良性循环。
+
+
+子女的健康状况也对受教育水平有着正向影响，健康状况每增加一个单位，子女的受
+教育水平提升一个级别的概率增加 8.35%。健康水平每提高一个单位，子女的受教育水平为
+“文盲/半文盲”的概率会减少 0.82%,，为“小学”的概率会减少 0.55%，为“初中”的概率
+会增加 0.25%，为“高中”的概率会增加 0.37%，为“大专及以上”的概率会增加 0.74%。
+健康作为人力资本的其中一个方面, 好的健康水平对于子女成长的重要性也不可忽略。随着
+人们收入水平的提高，父母在子女的课外辅导方面的花费越来越多, 但是也应该注意子女的
+身心健康，多参加体育锻炼，有利于子女的受教育水平的提高。
+
+
+从子女的婚姻方面来看，已婚子女的受教育水平每提升一个级别比未婚子女的可能性
+减少 45.84%，已婚子女的受教育水平为“文盲/半文盲”的概率会增加 5.88%，为“小学”
+的概率会增加 3.96%，为“初中”的概率会减少 1.8%，为“高中”的概率会减少 2.69%，为
+“大专及以上”的概率会减少 5.34%。可以解释为，结婚较早的人群，其受教育水平一般来
+说相对较低，而接受高等教育的人群，由于教育时间的投入较长，从校园出来年龄就已经比
+较大了，再在社会磨练几年，所以一般结婚比较晚。
+
+
+子女党员身份对子女的受教育水平也有正向影响, 党员身份子女的平均受教育水平每提
+升一个级别的可能性比非党员身份子女高出 3.63 倍。一方面是因为要想入党必须年满 18
+周岁，而且在学校入党方式相对容易，而一般年满 18 岁还在校园的人，学历相对较高。另
+一方面必须足够优秀才可以入党，这部分人的受教育水平一般都比较高。
+
+
+
+
+
+### 分城乡户籍样本回归
+
+
+```{r tab-ordered-logit-sample-hukou-1}
+mod_hukou_1 <- polr(
+  Ed ~ F_ed + M_ed + gender + urban + region + healthy + married + party,
+  data = df1 %>% filter(hukou == 1), # 城市户口
+  method = c("logistic")
+)
+
+tb_odds_ratio <- 
+  broom::tidy(mod_hukou_1, exponentiate = TRUE) %>% 
+  dplyr::filter(!str_detect(term, "\\d")) %>% 
+  dplyr::select(term, Odds_Ratio = estimate)
+
+
+tb_margin_effect <- erer::ocME(mod_hukou_1) %>% 
+  purrr::pluck("out") %>% 
+  purrr::pluck("ME.all") %>% 
+  as.data.frame() %>% 
+  rownames_to_column("term")
+
+
+tb_odds_ratio %>% 
+  left_join(tb_margin_effect, by = "term") %>% 
+  gt(caption = "城市户籍样本的有序logit回归结果")
+```
+
+
+```{r tab-ordered-logit-sample-hukou-0}
+mod_hukou_0 <- polr(
+  Ed ~ F_ed + M_ed + gender + urban + region + healthy + married + party,
+  data = df1 %>% filter(hukou == 0),  # 农村户口
+  method = c("logistic")
+)
+
+tb_odds_ratio <- 
+  broom::tidy(mod_hukou_0, exponentiate = TRUE) %>% 
+  dplyr::filter(!str_detect(term, "\\d")) %>% 
+  dplyr::select(term, Odds_Ratio = estimate)
+
+
+tb_margin_effect <- erer::ocME(mod_hukou_0) %>% 
+  purrr::pluck("out") %>% 
+  purrr::pluck("ME.all") %>% 
+  as.data.frame() %>% 
+  rownames_to_column("term")
+
+
+tb_odds_ratio %>% 
+  left_join(tb_margin_effect, by = "term") %>% 
+  gt(caption = "农村户籍样本的有序logit回归结果")
+```
+
+
+从表 \@ref(tab:tab-ordered-logit-sample-hukou-1)和表 \@ref(tab:tab-ordered-logit-sample-hukou-0)的回归结果可以看出，当城市户籍的父亲受教育程度提高一个级别时，其子女的受教育水平向上提高一个级别的概率会增加46.29%，子女的受教育水平为“文盲/半文盲”的概率会减少0.9%, 为“小学”的概率会减少 2.25%, 为“初中”的概率会减少 3.87%，为“高中”的概率会减少 1.99%，为“大专及以上”的概率会增加 7.21%。当城市户籍的母亲受教育程度提高一个级别时，其子女的受教育水平向上提高一个级别的概率会增加53.14%，子女的受教育水平为“文言/半文盲”的概率会减少1%，为“小学”的概率会减少2.25%，为“初中”的概率会减少4.33%,为“高中”的概率会减少0.22%,为“大专及以上”的概率会增加 8.07%。
+
+
+当农村户籍的父亲受教育程度提高一个级别时, 其子女的受教育水平向上提高一个级别
+的概率会增加 54.98%，子女的受教育水平为“文盲/半文盲”的概率会减少 5.69%，为“小
+学”的概率会减少 3.22%,为“初中”的概率会增加 3.65%, 为“高中”的概率会增加2. 47%，
+为“大专及以上”的概率会增加 2.25%。当农村户籍的母亲受教育程度提高一个级别时，其
+子女的受教育水平向上提高一个级别的概率会增加 59%，子女的受教育水平为“文盲/半文
+言”的概率会减少6.02%, 为“小学”的概率会减少 3.40%, 为“初中”的概率会增加 3.86%，
+为“高中”的概率会增加 2.9%，为“大专及以上”的概率会增加 2.67%。
+
+
+可以看出，与城市户籍相比，农村户籍的父母教育程度提高一个级别时，其子女的受教
+育水平向上提高一个级别的可能性更大。一方面是因为农村户籍的父母及子女的受教育程度
+整体比较低，可以增长的幅度更大，尤其是在小学及以下时，而城市户籍的父母及其子女的
+受教育程度整体较高，可以增长的幅度更小，尤其是在较高教育级别时，导致农村户籍整体
+的边际效应更强。另一方面因为农村地区的教育资源缺乏, 子女的受教育水平更依赖于父母
+的素质, 而城市地区的教育资源丰富,子女的受教育水平依赖父母更小在受教育质量方面，
+尤其是在高等教育方面, 城市户籍子女接受高等教育的可能性更高, 在高等教育的边际效应
+更强。总体来说与城市户籍相比，农村户籍居民的教育代际传递性较强，教育代际流动性较
+弱，阶层固化现象更为严重。
+
+
+另外，从城市户籍样本来看，性别对子女的受教育水平的影响并不显著，但是从农村
+户籍样本来看，男性的受教育水平提高一个级别的可能性比女性高 60%，且男性的受教育水
+平为“文盲/半文盲”的概率会减少 6.12%，为“小学”的概率会减少 3.46%，为“初中”的
+概率会增加 3.92%, 为“高中”的概率会增加 2.94%, 为“大专及以上”的概率会增加2. 71%。
+说明农村的“重男轻女”现象比较严重，城市则相对男女平等。对于城市来说，城市户籍的
+父母一般学历相对较高，思想比较开放,无论子女是男孩还是女孩，都一样重视对子女的教
+育。另外城市户籍的独生子女比较多,父母对子女的教育投资不会按性别来歧视。对于农村
+来说，农村户籍的父母一般学历较低，受传统的“重男轻女”思想影响较大，另外农村户籍
+的父母女子数量相对比较多，加上收入水平有限，把有限的教育资源优先给予了男孩。
+
+
+
+
+### 分父母学历匹配程度回归
+
+```{r}
+df2 <- df %>%
+  mutate(
+    across(Ed, as.factor),
+    across(Ed, ~fct_inseq(.x, ordered = TRUE))
+  ) %>% 
+  mutate(
+    mc = F_ed == M_ed,
+    Fmed = F_ed + M_ed,
+    .after = pid
+  )
+
+
+mod_match <- polr(
+  Ed ~ Fmed + gender + urban + hukou + region + healthy + married + party,
+  data = df2 %>% filter(mc),  
+  method = c("logistic")
+)
+
+mod_no_match <- polr(
+  Ed ~ Fmed + gender + urban + hukou + region + healthy + married + party,
+  data = df2 %>% filter(!mc),  
+  method = c("logistic")
+)
+```
+
+
+```{r tab-ordered-logit-father-match-mother}
+tb_match <- mod_match %>% 
+  broom::tidy(exponentiate = TRUE) %>% 
+  dplyr::filter(!str_detect(term, "\\d")) %>% 
+  dplyr::select(term, no_match = estimate)
+
+
+tb_no_match <- mod_no_match %>% 
+  broom::tidy(exponentiate = TRUE) %>% 
+  dplyr::filter(!str_detect(term, "\\d")) %>%
+  dplyr::select(term, match = estimate)
+
+tb_no_match %>% 
+  left_join(tb_match, by = "term") %>% 
+  gt(caption = "分父母学历匹配程度回归")
+```
+
+
+从父母的受教育水平是否匹配可以看出, 见表 \@ref(tab:tab-ordered-logit-father-match-mother)，
+从父母的受教育水平是否匹配可以看出, 当父母的受教育水平一致时，父母的整体受教
+育水平每提高一个级别，子女的受教育水平提高一个级别的可能性增加 53.37%，当父母的
+受教育水平不一致时，父母的整体受教育水平每提高一个级别，子女的受教育水平提高一个
+级别的可能性增加 48.19%。可以看出，家庭婚姻的教育匹配更有利于子女的受教育水平的
+提高,教育代际传递性更强。家庭婚姻的教育相互匹配，一方面利于家庭内部地位的相互平
+等，父母双方相对能够更加和谐的生活，能够为子女提供一个良好的生活环境。另一方面，
+父母教育的相互匹配，能够让父母在子女教育问题上更好地达成一致性, 利于对子女的教育。
+
+
+
+### 分性别样本回归
+
+
+```{r tab-ordered-logit-sample-gender-1}
+mod_gender_male <- polr(
+  Ed ~ Fmed + urban + hukou + region + healthy + married + party,
+  data = df2 %>% filter(gender == 1), 
+  method = c("logistic")
+)
+
+tb_odds_ratio <- 
+  broom::tidy(mod_gender_male, exponentiate = TRUE) %>% 
+  dplyr::filter(!str_detect(term, "\\d")) %>% 
+  dplyr::select(term, Odds_Ratio = estimate)
+
+
+tb_margin_effect <- erer::ocME(mod_gender_male) %>% 
+  purrr::pluck("out") %>% 
+  purrr::pluck("ME.all") %>% 
+  as.data.frame() %>% 
+  rownames_to_column("term")
+
+
+tb_odds_ratio %>% 
+  left_join(tb_margin_effect, by = "term") %>% 
+  gt(caption = "男性样本的有序logit回归结果")
+```
+
+
+```{r tab-ordered-logit-sample-gender-0}
+mod_gender_female <- polr(
+  Ed ~ Fmed + urban + hukou + region + healthy + married + party,
+  data = df2 %>% filter(gender == 0), 
+  method = c("logistic")
+)
+
+tb_odds_ratio <- 
+  broom::tidy(mod_gender_female, exponentiate = TRUE) %>% 
+  dplyr::filter(!str_detect(term, "\\d")) %>% 
+  dplyr::select(term, Odds_Ratio = estimate)
+
+
+tb_margin_effect <- erer::ocME(mod_gender_female) %>% 
+  purrr::pluck("out") %>% 
+  purrr::pluck("ME.all") %>% 
+  as.data.frame() %>% 
+  rownames_to_column("term")
+
+
+tb_odds_ratio %>% 
+  left_join(tb_margin_effect, by = "term") %>% 
+  gt(caption = "女性样本的有序logit回归结果")
+```
+
+从表 \@ref(tab:tab-ordered-logit-sample-gender-1) 和
+表 \@ref(tab:tab-ordered-logit-sample-gender-0)
+结果可以看出, 当父母的整体受教育程度提高一个级别时，男性的受教育水平向
+上提高一个级别的概率会增加 47.69%，男性的受教育水平为“文盲/半文盲”的概率会减少
+3.29%，为“小学”的概率会减少 3.45%，为“初中”的概率会增加 0.88%，为“高中”的概
+率会增加 2.04%，为“大专及以上”的概率会增加 3.83%。
+
+
+当父母的整体受教育程度提高一个级别时, 女性的受教育水平向上提高一个级别的概率
+会增加 62.21%，女性的受教育水平为“文言/半文言”的概率会减少 5.67%，为“小学”的
+概率会减少 2.27%，为“初中”的概率会增加 1.89%，为“高中”的概率会增加 1.96%，为
+“大专及以上”的概率会增加 4.08%。
+
+
+可以看出当父母的整体受教育程度提高时，对子女的受教育水平的影响存在性别差异，
+女性的受教育水平向上提高一个级别的概率更大，而且女性接受高等教育的可能性也更大。
+可能有以下原因，一是生理方面的差异，相关研究发现，3.5 岁女孩的大脑语言区相当于 5
+岁男孩的水平，也就是说女生生理上普遍会比男生早成熟1.5岁。在 11 岁时，男生口语能
+力、读写能力和计算能力的发育水平分别比女生晚 11、12 和 6 个月。所以，从开始接受教
+育之初,与同龄女孩相比，男孩就已经输在了起跑线。而中国的教育基本上是一步落后步步
+落后，上不了重点初中就很难考上重点高中，上不了重点高中就很难考上重点大学，女性的
+优势会在小学开始不断地积累和延续下去。二是心理方面的差异。众多心理学研究表明,在
+多动症、学习障碍、智力障碍、自闭症等儿童青少年阶段常见的心理疾病上，男孩的发病率
+远远高于女孩。男生一般比女生自制力差,在课堂上往往很难较长时间地保持专注，使得女
+生成绩在平均水平上高于男生。
+
+
+
+### 分地区样本回归
+
+```{r}
+df2 %>% distinct(region)
+```
+
+
+```{r tab-ordered-logit-sample-region-1}
+mod_region_1 <- polr(
+  Ed ~ Fmed + gender+ urban + hukou + healthy + married + party,
+  data = df2 %>% filter(region == 1),  # 西部=1，中部=2，东部=3
+  method = c("logistic")
+)
+
+tb_odds_ratio <- 
+  broom::tidy(mod_region_1, exponentiate = TRUE) %>% 
+  dplyr::filter(!str_detect(term, "\\d")) %>% 
+  dplyr::select(term, Odds_Ratio = estimate)
+
+
+tb_margin_effect <- erer::ocME(mod_region_1) %>% 
+  purrr::pluck("out") %>% 
+  purrr::pluck("ME.all") %>% 
+  as.data.frame() %>% 
+  rownames_to_column("term")
+
+
+tb_odds_ratio %>% 
+  left_join(tb_margin_effect, by = "term") %>% 
+  gt(caption = "西部样本的有序logit回归结果")
+```
+
+
+
+
+```{r tab-ordered-logit-sample-region-2}
+mod_region_2 <- polr(
+  Ed ~ Fmed + gender+ urban + hukou + healthy + married + party,
+  data = df2 %>% filter(region == 2),  # 西部=1，中部=2，东部=3
+  method = c("logistic")
+)
+
+tb_odds_ratio <- 
+  broom::tidy(mod_region_2, exponentiate = TRUE) %>% 
+  dplyr::filter(!str_detect(term, "\\d")) %>% 
+  dplyr::select(term, Odds_Ratio = estimate)
+
+
+tb_margin_effect <- erer::ocME(mod_region_2) %>% 
+  purrr::pluck("out") %>% 
+  purrr::pluck("ME.all") %>% 
+  as.data.frame() %>% 
+  rownames_to_column("term")
+
+
+tb_odds_ratio %>% 
+  left_join(tb_margin_effect, by = "term") %>% 
+  gt(caption = "中部样本的有序logit回归结果")
+```
+
+
+
+```{r tab-ordered-logit-sample-region-3}
+mod_region_3 <- polr(
+  Ed ~ Fmed + gender+ urban + hukou + healthy + married + party,
+  data = df2 %>% filter(region == 3),  # 西部=1，中部=2，东部=3
+  method = c("logistic")
+)
+
+tb_odds_ratio <- 
+  broom::tidy(mod_region_3, exponentiate = TRUE) %>% 
+  dplyr::filter(!str_detect(term, "\\d")) %>% 
+  dplyr::select(term, Odds_Ratio = estimate)
+
+
+tb_margin_effect <- erer::ocME(mod_region_3) %>% 
+  purrr::pluck("out") %>% 
+  purrr::pluck("ME.all") %>% 
+  as.data.frame() %>% 
+  rownames_to_column("term")
+
+
+tb_odds_ratio %>% 
+  left_join(tb_margin_effect, by = "term") %>% 
+  gt(caption = "东部样本的有序logit回归结果")
+```
+
+
+
+从表 \@ref(tab:tab-ordered-logit-sample-region-1) 到
+表 \@ref(tab:tab-ordered-logit-sample-region-3)
+结果可以看出，对于西部地区来说，当父母的整体受教育程度提高一个级别时，
+子女的受教育水平向上提高一个级别的概率会增加 60.09%，子女的受教育水平为“文盲/半
+文盲”的概率会减少7.8%, 为“小学”的概率会减少0.93%, 为“初中”的概率会增加3.69%，
+为“高中”的概率会增加 1.98%，为“大专及以上”的概率会增加 3.05%。对于中部地区来
+说，当父母的整体受教育程度提高一个级别时, 子女的受教育水平向上提高一个级别的概率
+会增加 51.61%，子女的受教育水平为“文言/半文讶”的概率会减少 3.3%%，为“小学”的
+概率会减少 3.93%, 为“初中”的概率会增加 1.19%, 为“高中”的概率会增加 2.1%, 为“大
+专及以上”的概率会增加 4.03%。对于东部地区来说，当父母的整体受教育程度提高一个级
+别时, 子女的受教育水平向上提高一个级别的概率会增加 51.60%, 子女的受教育水平为“文
+盲/半文盲”的概率会减少 2.06%，为“小学”的概率会减少 4.29%, 为“初中”的概率会减
+少0.48%，为“高中”的概率会增加 2.05%，为“大专及以上”的概率会增加 4.78%。
+
+
+整体上可以着出，在教育代际传递性方面，西部地区最强，其次是中部地区，东部地区
+最弱。但是在高等教育方面，东部地区的子女接受高等教育的机会最高，其次是中部地区，
+西部地区的机会最少。教育代际流动性由东部、中部到西部地区依次递减,教育不公平性也
+由东部、中部到西部地区递增。经济越落后的地区，教育不公平性反而越高，主要因为落后
+地区教育资源总体上比较缺乏, 使得这部分资源主要集中在优势阶层中, 这种现象加剧了“贫
+困代际传递” 落后地区形成一种恶性循环。
+
+
+
+
+### 分出生年代样本回归
+
+
+```{r}
+df3 <- df2 %>%
+  mutate(generation = case_when(
+    between(year, 1970, 1979) ~ "70s",
+    between(year, 1980, 1989) ~ "80s",
+    TRUE ~ "other"
+  ))
+```
+
+
+```{r tab-ordered-logit-sample-generation-70s}
+mod_generation_70s <- polr(
+  Ed ~ Fmed + gender + urban + hukou + region + healthy + married + party,
+  data = df3 %>% filter(generation == "70s"), 
+  method = c("logistic")
+)
+
+tb_odds_ratio <- 
+  broom::tidy(mod_generation_70s, exponentiate = TRUE) %>% 
+  dplyr::filter(!str_detect(term, "\\d")) %>% 
+  dplyr::select(term, Odds_Ratio = estimate)
+
+
+tb_margin_effect <- erer::ocME(mod_generation_70s) %>% 
+  purrr::pluck("out") %>% 
+  purrr::pluck("ME.all") %>% 
+  as.data.frame() %>% 
+  rownames_to_column("term")
+
+
+tb_odds_ratio %>% 
+  left_join(tb_margin_effect, by = "term") %>% 
+  gt(caption = "70后样本的有序logit回归结果")
+```
+
+
+
+```{r tab-ordered-logit-sample-generation-80s}
+mod_generation_80s <- polr(
+  Ed ~ Fmed + gender + urban + hukou + region + healthy + married + party,
+  data = df3 %>% filter(generation == "80s"), 
+  method = c("logistic")
+)
+
+tb_odds_ratio <- 
+  broom::tidy(mod_generation_80s, exponentiate = TRUE) %>% 
+  dplyr::filter(!str_detect(term, "\\d")) %>% 
+  dplyr::select(term, Odds_Ratio = estimate)
+
+
+tb_margin_effect <- erer::ocME(mod_generation_80s) %>% 
+  purrr::pluck("out") %>% 
+  purrr::pluck("ME.all") %>% 
+  as.data.frame() %>% 
+  rownames_to_column("term")
+
+
+tb_odds_ratio %>% 
+  left_join(tb_margin_effect, by = "term") %>% 
+  gt(caption = "80后样本的有序logit回归结果")
+```
+
+
+从表 \@ref(tab:tab-ordered-logit-sample-generation-70s) 和
+表 \@ref(tab:tab-ordered-logit-sample-generation-80s)回归结果可以看出，对于 70 后来说，当其父母的整体受教育程度提高一个级别时，
+70 后的受教育水平向上提高一个级别的概率会增加 49.52%，70 后的受教育水平为“文盲/
+半文言”的概率会减少 5.22%，为“小学”的概率会减少 1.69%，为“初中”的概率会增加
+2.46%，为“高中”的概率会增加 1.95%，为“大专及以上”的概率会增加 2.51%。对于 80
+后来说，当其父母的整体受教育程度提高一个级别时，80 后的受教育水平向上提高一个级
+别的概率会增加 43.34%, 80 后的受教育水平为“文盲/半文盲”的概率会减少2.27%, 为“小
+学”的概率会减少 3.41%, 为“初中”的概率会减少0.24%, 为“高中”的概率会增加 1.56%，
+为“大专及以上”的概率会增加 4.36%。
+
+
+整体上可以看出，在教育代际传递性方面，70 后的父母与其之间的代际传递性高于 80
+后的父母与其之间。但是在高等教育方面，80 后接受高等教育的机会高于 70 后说明随着
+我国教育事业的发展，教育代际流动性增强，整体的教育不公平现象降低，但是这种降低主
+要集中在基础教育方面，在高等教育方面，教育不公平性现象反而加剧。
+
+
