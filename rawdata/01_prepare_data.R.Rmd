@@ -38,8 +38,11 @@ library(broom)
 # 数据
 
 ## 成人表
+
+解压`[CFPS Public Data] CFPS2016 in STATA (English).rar`到简短的文件名`2016AllData`
+
 ```{r}
-cfps2016adult <- read_dta("./data/2016AllData/cfps2016adult_201906.dta")
+cfps2016adult <- read_dta("./2016AllData/cfps2016adult_201906.dta")
 ```
 
 
@@ -124,7 +127,7 @@ pre_adult %>% sjPlot::view_df()
 ## 家庭关系表
 
 ```{r}
-cfps2016famconf <- read_dta("./data/2016AllData/cfps2016famconf_201804.dta")
+cfps2016famconf <- read_dta("./2016AllData/cfps2016famconf_201804.dta")
 ```
 
 
