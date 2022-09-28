@@ -34,7 +34,18 @@ df <- raw %>%
 df
 ```
 
-
+```{r, eval=FALSE}
+raw %>%
+  mutate(
+    across(c(Ed, F_ed, M_ed), ~ case_match(.x,
+      1 ~ 1,
+      6 ~ 2,
+      9 ~ 3,
+      12 ~ 4,
+      c(15, 16, 19, 22) ~ 5
+    ))
+  )
+```
 ### 父母受教育水平的匹配情况分析
 
 ```{r tab-parents-match}
