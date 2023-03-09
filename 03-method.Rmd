@@ -5,7 +5,8 @@
 library(tidyverse)
 library(gt)
 
-raw <- read_rds(here::here("rawdata", "trans_cfps.rds"))
+raw <- read_rds(here::here("rawdata", "trans_cfps.rds")) %>% 
+  haven::zap_labels()
 ```
 
 ## 数据来源及变量说明
